@@ -27,9 +27,23 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        CourseDBHelper helper = new CourseDBHelper(this);
+        SQLiteDatabase db = helper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT SUM(credit) cr, SUM(value*credit) gp FROM course;", null);
+        cursor.moveToFirst();
 
-        // This method is called when this activity is put foreground.
+        int TotalCR = cursor.getInt(0);
+        double TotalGP = cursor.getDouble(1);
+        double TotalGPA = TotalGP/TotalCR;
 
+        TextView CR = (TextView)findViewById(R.id.tvCR);
+        CR.setText(String.format("%d", TotalCR));
+
+        TextView GP = (TextView)findViewById(R.id.tvGP);
+        GP.setText(String.format("%.2f", TotalGP));
+
+        TextView GPA = (TextView)findViewById(R.id.tvGPA);
+        GPA.setText(String.format("%.2f", TotalGPA));
     }
 
     public void buttonClicked(View v) {
@@ -61,10 +75,19 @@ public class MainActivity extends ActionBarActivity {
                 int credit = data.getIntExtra("credit", 0);
                 String grade = data.getStringExtra("grade");
 
+                helper = new CourseDBHelper(this.getApplicationContext());
+                SQLiteDatabase db = helper.getWritableDatabase();
+                ContentValues r = new ContentValues();
+                r.put("code",code);
+                r.put("credit",credit);
+                r.put("grade", grade);
+                r.put("value", gradeToValue(grade));
+                long new_id = db.insert("course", null, r);
             }
         }
 
         Log.d("course", "onActivityResult");
+
     }
 
     double gradeToValue(String g) {
@@ -85,6 +108,16 @@ public class MainActivity extends ActionBarActivity {
         else
             return 0.0;
     }
+
+     public void resetClicked(View v){
+         helper = new CourseDBHelper(this.getApplicationContext());
+         SQLiteDatabase db = helper.getWritableDatabase();
+         int n_rows = db.delete("course", null, null);
+         onResume();
+
+     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
